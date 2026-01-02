@@ -1,0 +1,54 @@
+{
+  "formId": "1ttWHcILbtR49kE93Bfcq3DbOo0Yt8cv5UIDyCSn0PW8",
+  "info": {
+    "description": "Odyssey Attendance!",
+    "documentTitle": "Odyssey-Attendance-Sign-in"
+  },
+  "settings": {
+    "emailCollectionType": "VERIFIED"
+  },
+  "revisionId": "00000037",
+  "responderUri": "https://docs.google.com/forms/d/e/1FAIpQLScApizmJXN9oPhs6veoFaWeUcNWNZ4ljrB8k6jWP6z_9SN9uA/viewform",
+  "items": [
+    {
+      "itemId": "3456b466",
+      "title": "First Name",
+      "questionItem": {
+        "question": {
+          "questionId": "2933191b",
+          "required": true,
+          "textQuestion": {}
+        }
+      }
+    },
+    {
+      "itemId": "38c0da92",
+      "title": "Last Name",
+      "questionItem": {
+        "question": {
+          "questionId": "2b49c617",
+          "required": true,
+          "textQuestion": {}
+        }
+      }
+    },
+    {
+      "itemId": "2d4ffe12",
+      "title": "Email Address (The one you signed up to Odyssey with if different from one currently logged in)",
+      "questionItem": {
+        "question": {
+          "questionId": "1370e265",
+          "required": false,
+          "textQuestion": {}
+        }
+      }
+    }
+  ],
+  "linkedSheetId": "1pCnfSWTi2qmrrZelHkxQVjuBL8H6lE-LFOJva4MOl-c",
+  "publishSettings": {
+    "publishState": {
+      "isPublished": true,
+      "isAcceptingResponses": true
+    }
+  }
+}

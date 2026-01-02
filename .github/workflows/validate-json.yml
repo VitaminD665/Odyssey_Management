@@ -1,8 +1,30 @@
-name: validate-json.yml
+name: Validate JSON Syntax
 on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+  workflow_dispatch:
+
+  push:
+    branches: [ main ]
 
 jobs:
   validate-json:
     runs-on: ubuntu-latest
-    steps:
 
+    # Add more as needed, SEPARATED BY SPACES
+    env:
+      JSON_FILES: "src/google_apis_forms/attendance-form_v0.json"
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Verify JSON Syntax
+        shell: bash
+        run: |
+          for file in ${{ env.JSON_FILES }}; do
+            echo "Validating $file"
+            jq empty $file
+          end
+          

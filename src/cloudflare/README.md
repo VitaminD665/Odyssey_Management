@@ -1,0 +1,1 @@
+House the information required for the static cloudflare pages and the like

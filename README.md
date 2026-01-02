@@ -7,3 +7,7 @@ Requires python 3.13
 Needs expanding on Google Cloud Run for headless compute
 
 Integration with Cloudflare pages and whatnot
+
+The code and function of this repository aims to be composed of serverless compute. Thus this application
+has no 'state' as it simply executes the given task.
+

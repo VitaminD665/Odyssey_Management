@@ -1,0 +1,10 @@
+# Directories
+.venv/
+.idea/
+.github/
+
+# Files
+LICENSE
+CODEOWNERS
+.gitignore
+.env
