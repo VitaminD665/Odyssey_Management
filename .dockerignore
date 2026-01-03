@@ -2,6 +2,7 @@
 .venv/
 .idea/
 .github/
+src.tests/
 
 # Files
 LICENSE
