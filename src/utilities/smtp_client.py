@@ -5,6 +5,7 @@ pre-authorized credentials. Encryption via SSL
 
 
 """
+
 import os
 import smtplib
 import ssl
@@ -13,8 +14,8 @@ from pathlib import Path
 from enum import StrEnum
 from dataclasses import dataclass, field
 
+import mimetypes
 from email import encoders
-from email.message import Message
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -47,6 +48,7 @@ class MIMESemantics(StrEnum):
     TO = "To"
     PLAIN_TEXT = "plain"
     HTML = "html"
+    MIXED = "mixed"
 
 
 @dataclass(frozen=True)
@@ -77,85 +79,86 @@ class SMTPClient:
             sender_email_address=os.getenv(self._SENDER_EMAIL_ADDRESS, ""),
             google_smtp_app_passwd=os.getenv(self._GOOGLE_SMTP_APP_PASS, ""),
         )
-
-        self._message: MIMEMultipart = MIMEMultipart(MIMESemantics.MULTIPART_ENTRY)
+        self._check_env_vars()
     
-    def __post_init__(self) -> None:
+    def _check_env_vars(self) -> None:
         if self._cfg.sender_email_address is None:
             raise ValueError(f"SMTPClient: Could Not Find sender_email_address; {self._cfg.sender_email_address}")
         
         if self._cfg.google_smtp_app_passwd is None:
             raise ValueError("SMTPClient: Could Not find Google SMTP Server Passwd")
 
-    def _init_MIMEMultipart_email( 
+    def _build_email_message(
             self,
-            subject: str, 
-            destination_email_address: str,
-            plain_text_body: str,
-            html_body: str,
-        ) -> None:
+            email_contents: EmailMessage,
+        ) -> MIMEMultipart:
         """
         Create an email with a plain text and HTML semantics. The HTML Version
           always be attempted first, with the plain text as a fallback.
 
-        :param subject: The Subject of the Email
-        :param destination_email_address: The Received Party
-        :param plain_text_body: The Plain text version of the Email
-        :param html_body: The HTML Contents of the Email
+        :param email_contents: The EmailMessage dataclass
         """
-        if not plain_text_body:
-            raise RunTimeError("Must Specify a plain text alternative to Email Contents")
+
+        def _add_attachments(msg: MIMEBase, files: list[Path]) -> None:
+            """
+            Add attachments to the instance's message.
+            Encode the file into ASCII Chars.
+
+            Raises FileNotFoundError.
+
+            :param: List of file Path objects
+            """
+            for file in files:
+                if not file.exists():
+                    raise FileNotFoundError(f"Could not find file: {file}")
+
+                ctype, encoding = mimetypes.guess_type(str(file))
+                if ctype is None or encoding is not None:
+                    ctype = "application/octet-stream"
+
+                maintype, subtype = ctype.split("/", 1)
+                with open(file, "rb") as f:
+                    data = f.read()
+
+                if maintype == "text":
+                    part = MIMEText(data.decode("utf-8", errors="replace"), _subtype=subtype)
+                else:
+                    part = MIMEBase(maintype, subtype)
+                    part.set_payload(data)
+                    encoders.encode_base64(part)
+
+                part.add_header("Content-Disposition", f'attachment; filename="{file.name}"')
+                msg.attach(part)
+
+        if not email_contents.plain_text_body:
+            raise RuntimeError("Must Specify a plain text alternative to Email Contents")
         
-        if not html_body:
-            raise RuntTimeError("Must Specify a HTML body to Email Contents") 
+        if not email_contents.html_body:
+            raise RuntimeError("Must Specify a HTML body to Email Contents")
         
-        if not subject: 
-            raise RuntTimeError("Must Specify subject in Email Contents")
+        if not email_contents.subject:
+            raise RuntimeError("Must Specify subject in Email Contents")
 
-        if not self._message:
-            self._message = MIMEMultipart(MIMESemantics.MULTIPART_ENTRY)
-
-        self._message[MIMESemantics.SUBJECT] = subject
-        self._message[MIMESemantics.FROM] = self._cfg.sender_email_address
-        self._message[MIMESemantics.TO] = destination_email_address
-
-        text_part = MIMEText(plain_text_body, MIMESemantics.PLAIN_TEXT)
-        html_part = MIMEText(html_body, MIMESemantics.HTML)
+        message = MIMEMultipart(MIMESemantics.MIXED)
+        message[MIMESemantics.SUBJECT] = email_contents.subject
+        message[MIMESemantics.FROM] = self._cfg.sender_email_address
+        message[MIMESemantics.TO] = email_contents.destination_email_address
 
         # Adding the html alternative last, server will render last one first.
-        self._message.attach(text_part)
-        self._message.attach(html_part)
+        alt = MIMEMultipart("alternative")
+        alt.attach(MIMEText(email_contents.plain_text_body, MIMESemantics.PLAIN_TEXT))
+        alt.attach(MIMEText(email_contents.html_body, MIMESemantics.HTML))
+        message.attach(alt)
 
-    def _add_attachments(self, files: list[Path]) -> None:
-        """
-        Add attachments to the instance's message. 
-        Encode the file into ASCII Chars.
-        
-        Raises FileNotFoundError.
+        _add_attachments(message, email_contents.attachments)
 
-        :param: List of file Path objects 
-        """
-        for file in files:
-            if not file.exists():
-                raise FileNotFoundError(f"Could not find file: {file}")
-                continue
+        return message
 
-            with open(file, "rb") as attachment:
-                part = MIMEBase("application", "octet-stream")
-                part.set_payload(attachment.read())
-
-            encoders.encode_base64(part)
-            part.add_header(
-                "Content",
-                f"attachment; filename = {str(file)}"
-            )
-
-            self._message.attach(part)
 
     def send_email(self, email_contents: EmailMessage) -> bool:
         """
         Create a MIME Email with plain text and html versions. 
-        Connect to a SMTP Server (In this case: Gmail SMTP) through SSL.
+        Connect to an SMTP Server (In this case: Gmail SMTP) through SSL.
 
         Raises SMTP Connection, Authentication
 
@@ -163,40 +166,36 @@ class SMTPClient:
         if not email_contents:
             raise SMTPEmailException("Must Specify Message Contents for Mail Transfer")
 
-        self._init_MIMEMultipart_email(
-            subject=email_contents.subject,
-            destination_email_address=email_contents.destination_email_address,
-            plain_text_body=email_contents.plain_text_body,
-            html_body=email_contents.html_body,
-        )
-
-        # Add as many attachments to the email
-        if email_contents.attachments:
-            self._add_attachments(email_contents.attachments)
-        
+        email = self._build_email_message(email_contents)
         try:
-            with smtplib.SMTP_SSL(self._cfg.smtp_server, self._cfg.smtp_port, context=ssl.create_default_context()) as smtp_server:
+            with smtplib.SMTP_SSL(
+                    self._cfg.smtp_server,
+                    int(self._cfg.smtp_port),
+                    context=ssl.create_default_context()) as smtp_server:
                 smtp_server.login(self._cfg.sender_email_address, self._cfg.google_smtp_app_passwd)
-                smtp_server.sendmail(
-                    self._cfg.sender_email_address, receiver_email, message.as_string()
-                )
+                smtp_server.send_message(email)
+            return True
         
         # TODO: Get all of these in the logger when complete
         except smtplib.SMTPConnectError as e:
             print(f"Error Connecting to server. {type(e)}: {e}")
+            return False
         except smtplib.SMTPAuthenticationError as e:
             print(f"Error with Server Auth. {type(e)}: {e}")
+            return False
         except smtplib.SMTPSenderRefused as e:
             print(f"Sender Email Address Refused to comply. {type(e)}: {e}")
-        except smtplib.SMTPException as e: 
+            return False
+        except smtplib.SMTPException as e:
             print(f"Error with SMTP Operation. {type(e)}: {e}")
+            return False
         except Exception as e:
             print(f"Exception raised in SMTPClient.send_email() instance. {e}")
+            return False
 
     def test_connection(self) -> bool:
-        """ Python documentation has the .noop()"""
+        """ Python documentation has the .noop() to test connectivity?"""
         pass
-
 
 
 class EmailClient:
@@ -213,16 +212,9 @@ class EmailClient:
     def __init__(self) -> None:
         self._client: SMTPClient = SMTPClient()
 
-    def __post_init__(self) -> None:
-        pass
-
-
     def send_email(self, email_message: EmailMessage) -> bool:
-        """ 
-        Title
-
-        """
-        self._client.send_email(email_message)
+        """ Title """
+        return True if self._client.send_email(email_message) else False
 
 
 if __name__ == "__main__":
@@ -253,7 +245,7 @@ if __name__ == "__main__":
     )
 
     manasi_email_contents: EmailMessage = EmailMessage(
-        destination_email_address="manasi.pande@ottawa.ca",
+        destination_email_address="",
         subject="Example Subject",
         plain_text_body="Test Email",
         html_body="""\
@@ -282,7 +274,7 @@ if __name__ == "__main__":
 
 
     if not my_client.send_email(my_email_contents):
-        print("Email to myself falied")
+        print("Email to myself failed")
     else:
         print("Email to Myself PASS")
 
