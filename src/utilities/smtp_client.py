@@ -200,14 +200,11 @@ class SMTPClient:
 
 class EmailClient:
     """ 
-    
     High-level Email sender class. Dependency Injection and whatnot
 
     Better yet, derive dependency injection from first principles.
-
     Composition with EmailMessage, SMTPClient class 
-    
-    
+
     """
     def __init__(self) -> None:
         self._client: SMTPClient = SMTPClient()
@@ -215,6 +212,8 @@ class EmailClient:
     def send_email(self, email_message: EmailMessage) -> bool:
         """ Title """
         return True if self._client.send_email(email_message) else False
+    
+
 
 
 if __name__ == "__main__":
@@ -232,15 +231,20 @@ if __name__ == "__main__":
 
     my_email_contents: EmailMessage = EmailMessage(
         destination_email_address=EMAIL_ADDR1,
-        subject="Example Test Subject",
+        subject="[Odyssey Management] Automated Test Email Subject",
         plain_text_body="Test Email",
         html_body="""\
         <html>
           <body>
-            <p>Test Email<br>
-                Test Automatic Email Sending<br>
-            <a href="https://docs.python.org/3/library/smtplib.html#smtp-objects">smptlib python stdlib</a> 
-            Is the source of Truth!
+            <p>Testing Automatic Emails<br>
+            Test Automatic Email Sending for tool expansion. This is an old attendance record. <br>
+ 
+            Using Python's built-in SMTP library! for automated emails via google as a smtp server.
+            <a href="https://docs.python.org/3/library/smtplib.html#smtp-objects">smptlib python stdlib</a>
+            
+            This will allow for HTML emails with attachments!<br>
+
+            This is an Automated Email Sent from the Odyssey Management Software.
             </p>
           </body>
         </html>
@@ -248,17 +252,22 @@ if __name__ == "__main__":
         attachments=[Path("attendance_dec16.csv")],
     )
 
-    manasi_email_contents: EmailMessage = EmailMessage(
+    other_email_contents: EmailMessage = EmailMessage(
         destination_email_address=EMAIL_ADDR2,
-        subject="Example Subject",
+        subject="[Odyssey Management] Automated Test Email Subject",
         plain_text_body="Test Email",
         html_body="""\
         <html>
           <body>
-            <p>Te<br>
-                Test Automatic Email Sending<br>
-            <a href="https://docs.python.org/3/library/smtplib.html#smtp-objects">smptlib python stdlib</a> 
-            Is the source of Truth!
+            <p>Testing Automatic Emails<br>
+            Test Automatic Email Sending for tool expansion. This is an old attendance record. <br>
+ 
+            Using Python's built-in SMTP library! for automated emails via google as a smtp server.
+            <a href="https://docs.python.org/3/library/smtplib.html#smtp-objects">smptlib python stdlib</a>
+            
+            This will allow for HTML emails with attachments!<br>
+
+            This is an Automated Email Sent from the Odyssey Management Software.
             </p>
           </body>
         </html>
@@ -266,23 +275,19 @@ if __name__ == "__main__":
         attachments=[Path("attendance_dec16.csv")],
     )
 
-    my_client = EmailClient()
-
-    # Currently Getting auth errors (good error handling yay!)
-    # It should work on my own device however.
-    # This is due to the google app passwd being device specific... will need to look into how to overcome.
 
     print("=============================")
     print("       Start SMTP test       ")
     print("=============================")
 
+    my_client = EmailClient()
 
     if not my_client.send_email(my_email_contents):
         print(f"Email to {EMAIL_ADDR1} failed")
     else:
         print(f"Email to {EMAIL_ADDR1} PASS")
 
-    if not my_client.send_email(manasi_email_contents):
+    if not my_client.send_email(other_email_contents):
         print(f"Email to {EMAIL_ADDR2} failed")
     else:
         print(f"Email to {EMAIL_ADDR2} PASS")
