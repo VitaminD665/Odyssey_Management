@@ -71,7 +71,7 @@ class SMTPClient:
 
     """
     # The service account for the Odyssey Management Software, stored via ENV VARS
-    _SENDER_EMAIL_ADDRESS: str = "SENDER_EMAIL_ADDRESS"
+    _SENDER_EMAIL_ADDRESS: str = "ODYSSEY_EMAIL_ADDRESS"
     _GOOGLE_SMTP_APP_PASS: str = "GOOGLE_SMTP_APP_PASS"
 
     def __init__(self) -> None:
@@ -132,10 +132,10 @@ class SMTPClient:
 
         if not email_contents.plain_text_body:
             raise RuntimeError("Must Specify a plain text alternative to Email Contents")
-        
+
         if not email_contents.html_body:
             raise RuntimeError("Must Specify a HTML body to Email Contents")
-        
+
         if not email_contents.subject:
             raise RuntimeError("Must Specify subject in Email Contents")
 
@@ -175,7 +175,7 @@ class SMTPClient:
                 smtp_server.login(self._cfg.sender_email_address, self._cfg.google_smtp_app_passwd)
                 smtp_server.send_message(email)
             return True
-        
+
         # TODO: Get all of these in the logger when complete
         except smtplib.SMTPConnectError as e:
             print(f"Error Connecting to server. {type(e)}: {e}")
@@ -226,8 +226,12 @@ if __name__ == "__main__":
     #   - Multiple Emails to one email
     #   - One email to many
     #
+    EMAIL_ADDR1 = "jsamis311@gmail.com"
+    EMAIL_ADDR2 = "jsamisrb@gmail.com"
+    EMAIL_ADDR3: str ="nasso.samis@gmail.com"
+
     my_email_contents: EmailMessage = EmailMessage(
-        destination_email_address="jsamis311@gmail.com",
+        destination_email_address=EMAIL_ADDR1,
         subject="Example Test Subject",
         plain_text_body="Test Email",
         html_body="""\
@@ -241,11 +245,11 @@ if __name__ == "__main__":
           </body>
         </html>
         """,
-        attachments=[Path("test_attachment.txt")],
+        attachments=[Path("attendance_dec16.csv")],
     )
 
     manasi_email_contents: EmailMessage = EmailMessage(
-        destination_email_address="",
+        destination_email_address=EMAIL_ADDR2,
         subject="Example Subject",
         plain_text_body="Test Email",
         html_body="""\
@@ -259,7 +263,7 @@ if __name__ == "__main__":
           </body>
         </html>
         """,
-        attachments=[Path("test_attachment.txt")],
+        attachments=[Path("attendance_dec16.csv")],
     )
 
     my_client = EmailClient()
@@ -274,28 +278,15 @@ if __name__ == "__main__":
 
 
     if not my_client.send_email(my_email_contents):
-        print("Email to myself failed")
+        print(f"Email to {EMAIL_ADDR1} failed")
     else:
-        print("Email to Myself PASS")
+        print(f"Email to {EMAIL_ADDR1} PASS")
 
     if not my_client.send_email(manasi_email_contents):
-        print("Email to manasi failed")
+        print(f"Email to {EMAIL_ADDR2} failed")
     else:
-        print("Email to Manasi PASS")
+        print(f"Email to {EMAIL_ADDR2} PASS")
 
     print("=============================")
     print("       END SMTP test         ")
     print("=============================")
-
-
-
-    a = [1, 2, 3]
-
-    if a:
-        print("a has stuff")
-    if not a:
-        print("a is empty")
-    else:
-        print("a is not empty")
-    
-    

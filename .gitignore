@@ -195,6 +195,12 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+# File Extensions
+*.csv
+*.pdf
+*.xlsx
+*.docx
+*.txt
 
 
 

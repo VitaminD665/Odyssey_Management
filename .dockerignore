@@ -9,3 +9,7 @@ LICENSE
 CODEOWNERS
 .gitignore
 .env
+
+# File Ext.
+*.csv
+*.xlsx
